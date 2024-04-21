@@ -28,9 +28,8 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import org.spongepowered.common.event.tracking.context.transaction.pipeline.BlockPipeline;
 import org.spongepowered.common.event.tracking.context.transaction.pipeline.PipelineCursor;
-import org.spongepowered.common.world.SpongeBlockChangeFlag;
 
-public final class RemoveTileEntityFromChunkEffect implements ProcessingSideEffect {
+public final class RemoveTileEntityFromChunkEffect implements ProcessingSideEffect<BlockPipeline, PipelineCursor, BlockChangeArgs, BlockState> {
 
     private static final class Holder {
         static final RemoveTileEntityFromChunkEffect INSTANCE = new RemoveTileEntityFromChunkEffect();
@@ -43,14 +42,14 @@ public final class RemoveTileEntityFromChunkEffect implements ProcessingSideEffe
     RemoveTileEntityFromChunkEffect() {}
 
     @Override
-    public EffectResult processSideEffect(final BlockPipeline pipeline, final PipelineCursor oldState, final BlockState newState,
-        final SpongeBlockChangeFlag flag, final int limit
+    public EffectResult processSideEffect(
+        final BlockPipeline pipeline, final PipelineCursor oldState, final BlockChangeArgs args
     ) {
         final BlockEntity tileEntity = oldState.tileEntity;
         if (tileEntity == null) {
-            return EffectResult.NULL_RETURN;
+            return EffectResult.nullReturn();
         }
         pipeline.getAffectedChunk().removeBlockEntity(oldState.pos);
-        return EffectResult.NULL_RETURN;
+        return EffectResult.nullReturn();
     }
 }

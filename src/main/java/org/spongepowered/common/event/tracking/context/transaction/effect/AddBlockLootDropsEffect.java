@@ -40,7 +40,7 @@ import org.spongepowered.common.event.tracking.context.transaction.pipeline.Pipe
 import org.spongepowered.common.util.VecHelper;
 import org.spongepowered.common.world.SpongeBlockChangeFlag;
 
-public final class AddBlockLootDropsEffect implements ProcessingSideEffect {
+public final class AddBlockLootDropsEffect implements ProcessingSideEffect<BlockPipeline, PipelineCursor, BlockChangeArgs, BlockState> {
 
     private static final class Holder {
         static final AddBlockLootDropsEffect INSTANCE = new AddBlockLootDropsEffect();
@@ -54,9 +54,11 @@ public final class AddBlockLootDropsEffect implements ProcessingSideEffect {
 
     @Override
     public EffectResult processSideEffect(
-        final BlockPipeline pipeline, final PipelineCursor oldState, final BlockState newState, final SpongeBlockChangeFlag flag,
-        final int limit
+        final BlockPipeline pipeline, final PipelineCursor oldState, final BlockChangeArgs args
     ) {
+        final BlockState newState = args.newState();
+        final SpongeBlockChangeFlag flag = args.flag();
+        final int limit = args.limit();
         final PhaseContext<@NonNull ?> phaseContext = PhaseTracker.getInstance().getPhaseContext();
 
         final ServerLevel world = pipeline.getServerWorld();

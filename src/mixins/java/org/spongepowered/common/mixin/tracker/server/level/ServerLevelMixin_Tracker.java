@@ -36,7 +36,9 @@ import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.BlockEventData;
 import net.minecraft.world.level.Explosion;
 import net.minecraft.world.level.block.Block;
@@ -46,6 +48,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.FluidState;
+import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.ticks.ScheduledTick;
 import net.minecraft.world.ticks.TickPriority;
@@ -105,6 +108,7 @@ import org.spongepowered.common.event.tracking.context.transaction.effect.Update
 import org.spongepowered.common.event.tracking.context.transaction.effect.WorldBlockChangeCompleteEffect;
 import org.spongepowered.common.event.tracking.context.transaction.effect.WorldDestroyBlockLevelEffect;
 import org.spongepowered.common.event.tracking.context.transaction.pipeline.ChunkPipeline;
+import org.spongepowered.common.event.tracking.context.transaction.pipeline.InteractItemPipeline;
 import org.spongepowered.common.event.tracking.context.transaction.pipeline.PipelineCursor;
 import org.spongepowered.common.event.tracking.context.transaction.pipeline.TileEntityPipeline;
 import org.spongepowered.common.event.tracking.context.transaction.pipeline.WorldPipeline;
@@ -458,11 +462,11 @@ public abstract class ServerLevelMixin_Tracker extends LevelMixin_Tracker implem
         // Then build and use the BlockPipeline
         final ChunkPipeline chunkPipeline = mixinChunk.bridge$createChunkPipeline(pos, newState, currentState, spongeFlag, limit);
         final WorldPipeline.Builder worldPipelineBuilder = WorldPipeline.builder(chunkPipeline);
-        worldPipelineBuilder.addEffect((pipeline, oldState, newState1, flag1, cursorLimit) -> {
+        worldPipelineBuilder.addEffect((pipeline, oldState, args) -> {
             if (oldState == null) {
-                return EffectResult.NULL_RETURN;
+                return EffectResult.nullReturn();
             }
-            return EffectResult.NULL_PASS;
+            return EffectResult.nullPass();
         })
             .addEffect(UpdateLightSideEffect.getInstance())
             .addEffect(CheckBlockPostPlacementIsSameEffect.getInstance())
@@ -586,6 +590,31 @@ public abstract class ServerLevelMixin_Tracker extends LevelMixin_Tracker implem
         }
         builder.flag(updateFlag);
         return builder.build();
+    }
+
+    @Override
+    public InteractItemPipeline bridge$startInteractionChange(net.minecraft.world.level.Level worldIn, ServerPlayer playerIn, InteractionHand handIn, BlockHitResult blockRaytraceResultIn, BlockState blockstate, ItemStack copiedStack) {
+        if (this.shadow$isDebug()) { // isClientSide is always false since this is WorldServer
+            return null;
+        }
+        if (this.bridge$isFake()) {
+            return null;
+        }
+
+        final var instance = PhaseTracker.getInstance();
+        if (instance.getSidedThread() != PhaseTracker.SERVER.getSidedThread() && instance != PhaseTracker.SERVER) {
+            throw new UnsupportedOperationException("Cannot perform a tracked Block Change on a ServerWorld while not on the main thread!");
+        }
+        final var pipeline = new InteractItemPipeline(
+            (ServerLevel) worldIn,
+            playerIn,
+            handIn,
+            blockRaytraceResultIn,
+            blockstate,
+            copiedStack,
+            instance.getPhaseContext().getTransactor()
+        );
+        return pipeline;
     }
 
     /**

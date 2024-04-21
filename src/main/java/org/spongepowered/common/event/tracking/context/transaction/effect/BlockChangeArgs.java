@@ -1,7 +1,7 @@
 /*
  * This file is part of Sponge, licensed under the MIT License (MIT).
  *
- * Copyright (c) SpongePowered <https://www.spongepowered.org>
+ * Copyright (c) SpongePowered <https://spongepowered.org>
  * Copyright (c) contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -21,33 +21,17 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
+ *
  */
 package org.spongepowered.common.event.tracking.context.transaction.effect;
 
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
-import org.checkerframework.checker.nullness.qual.Nullable;
-import org.spongepowered.common.event.tracking.context.transaction.pipeline.BlockPipeline;
-import org.spongepowered.common.event.tracking.context.transaction.pipeline.PipelineCursor;
+import org.spongepowered.common.world.SpongeBlockChangeFlag;
 
-public final class PerformBlockDropsFromDestruction implements ProcessingSideEffect<BlockPipeline, PipelineCursor, BlockChangeArgs, BlockState> {
-
-    private static final class Holder {
-        static final PerformBlockDropsFromDestruction INSTANCE = new PerformBlockDropsFromDestruction();
-    }
-    public static PerformBlockDropsFromDestruction getInstance() {
-        return Holder.INSTANCE;
-    }
-
-    PerformBlockDropsFromDestruction() {}
-
-    @Override
-    public EffectResult<@Nullable BlockState> processSideEffect(
-        final BlockPipeline pipeline, final PipelineCursor oldState, final BlockChangeArgs args
-    ) {
-        Block.dropResources(oldState.state, pipeline.getServerWorld(), oldState.pos, oldState.tileEntity, oldState.destroyer, ItemStack.EMPTY);
-        return EffectResult.nullPass();
-    }
+public record BlockChangeArgs(
+    BlockState newState,
+    SpongeBlockChangeFlag flag,
+    int limit
+) implements ProcessingSideEffect.Args {
 
 }
