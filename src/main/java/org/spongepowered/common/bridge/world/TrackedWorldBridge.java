@@ -27,15 +27,18 @@ package org.spongepowered.common.bridge.world;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.level.ServerPlayerGameMode;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.phys.BlockHitResult;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.world.BlockChangeFlag;
@@ -46,6 +49,9 @@ import org.spongepowered.common.bridge.world.level.LevelBridge;
 import org.spongepowered.common.bridge.world.level.block.state.BlockStateBridge;
 import org.spongepowered.common.event.tracking.PhaseContext;
 import org.spongepowered.common.event.tracking.context.transaction.TransactionalCaptureSupplier;
+import org.spongepowered.common.event.tracking.context.transaction.effect.InteractionAtArgs;
+import org.spongepowered.common.event.tracking.context.transaction.effect.UseItemArgs;
+import org.spongepowered.common.event.tracking.context.transaction.effect.UseItemOnArgs;
 import org.spongepowered.common.event.tracking.context.transaction.pipeline.InteractItemPipeline;
 import org.spongepowered.common.event.tracking.context.transaction.pipeline.WorldPipeline;
 
@@ -117,5 +123,10 @@ public interface TrackedWorldBridge {
      */
     SpongeBlockSnapshot bridge$createSnapshotWithEntity(BlockState state, BlockPos pos, BlockChangeFlag updateFlag, @Nullable BlockEntity tileEntity);
 
-    InteractItemPipeline bridge$startInteractionChange(Level worldIn, ServerPlayer playerIn, InteractionHand handIn, BlockHitResult blockRaytraceResultIn, BlockState blockstate, ItemStack copiedStack);
+    InteractItemPipeline<@NonNull InteractionAtArgs> bridge$startInteractAtBlockChange(Level worldIn, ServerPlayer playerIn, InteractionHand handIn, BlockHitResult blockRaytraceResultIn, BlockState blockstate, ItemStack copiedStack);
+
+    InteractItemPipeline<@NonNull UseItemOnArgs> bridge$startUseItemOnChange(UseOnContext context, ItemStack itemStack, ServerPlayer player, boolean b);
+
+    InteractItemPipeline<@NonNull UseItemArgs> bridge$startUseItemChange(ItemStack instance, ServerPlayer $$1, InteractionHand $$2, ServerPlayerGameMode serverPlayerGameMode);
+
 }

@@ -49,6 +49,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.Slice;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.common.bridge.world.TrackedWorldBridge;
 import org.spongepowered.common.bridge.world.inventory.container.MenuBridge;
 import org.spongepowered.common.event.tracking.PhaseContext;
 import org.spongepowered.common.event.tracking.PhaseTracker;
@@ -123,9 +124,8 @@ public class ServerGamePacketListenerImplMixin_Inventory {
         final PhaseContext<@NonNull ?> context = PhaseTracker.SERVER.getPhaseContext();
         final TransactionalCaptureSupplier transactor = context.getTransactor();
         try (final EffectTransactor ignored = transactor.logPlayerInventoryChangeWithEffect(this.player, PlayerInventoryTransaction.EventCreator.STANDARD)) {
-            final InteractionResult result = serverPlayerGameMode.useItem(param0, param1, param2, param3);
-            this.player.inventoryMenu.broadcastChanges(); // capture
-            return result;
+            final var pipeline = ((TrackedWorldBridge) param1).bridge$startUseItemChange(param2, param0, param3, serverPlayerGameMode);
+            return pipeline.processInteraction(PhaseTracker.getInstance().getPhaseContext());
         }
         // TrackingUtil.processBlockCaptures called by UseItemPacketState
     }

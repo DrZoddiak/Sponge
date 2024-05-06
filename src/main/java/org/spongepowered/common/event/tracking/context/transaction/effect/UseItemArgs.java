@@ -25,29 +25,18 @@
  */
 package org.spongepowered.common.event.tracking.context.transaction.effect;
 
-import net.minecraft.world.InteractionResult;
-import org.spongepowered.common.event.tracking.context.transaction.EffectTransactor;
-import org.spongepowered.common.event.tracking.context.transaction.inventory.PlayerInventoryTransaction;
-import org.spongepowered.common.event.tracking.context.transaction.pipeline.InteractItemPipeline;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.level.ServerPlayerGameMode;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+import org.spongepowered.api.item.inventory.ItemStackSnapshot;
 
-public final class PlayerContainerRefreshEffect implements ProcessingSideEffect<InteractItemPipeline, InteractionResult, InteractionArgs, InteractionResult> {
-
-    private static final class Holder {
-        static final PlayerContainerRefreshEffect INSTANCE = new PlayerContainerRefreshEffect();
-    }
-
-    public static PlayerContainerRefreshEffect getInstance() {
-        return Holder.INSTANCE;
-    }
-
-    @Override
-    public EffectResult<InteractionResult> processSideEffect(
-        InteractItemPipeline pipeline, InteractionResult oldState, InteractionArgs args
-    ) {
-        pipeline.transactor().logPlayerInventoryChange(args.player(), PlayerInventoryTransaction.EventCreator.STANDARD);
-        try (EffectTransactor ignored = BroadcastInventoryChangesEffect.transact(pipeline.transactor())) {
-            args.player().containerMenu.broadcastChanges();
-        }
-        return EffectResult.nullPass();
-    }
+public record UseItemArgs(
+    Level world,
+    ServerPlayerGameMode gameMode,
+    ServerPlayer player,
+    InteractionHand hand,
+    ItemStack stack
+) implements ProcessingSideEffect.Args {
 }

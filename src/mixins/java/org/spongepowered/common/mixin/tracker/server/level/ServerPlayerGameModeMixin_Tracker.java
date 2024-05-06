@@ -30,7 +30,9 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.level.ServerPlayerGameMode;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.MenuProvider;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.UseOnContext;
@@ -42,7 +44,6 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.event.CauseStackManager;
 import org.spongepowered.api.event.EventContextKeys;
-import org.spongepowered.api.event.block.InteractBlockEvent;
 import org.spongepowered.api.event.item.inventory.InteractItemEvent;
 import org.spongepowered.api.util.Tristate;
 import org.spongepowered.api.world.server.ServerLocation;
@@ -53,6 +54,7 @@ import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.spongepowered.common.bridge.server.level.ServerPlayerGameModeBridge;
 import org.spongepowered.common.bridge.world.TrackedWorldBridge;
@@ -66,7 +68,6 @@ import org.spongepowered.common.event.tracking.context.transaction.ResultingTran
 import org.spongepowered.common.event.tracking.context.transaction.TransactionalCaptureSupplier;
 import org.spongepowered.common.event.tracking.context.transaction.effect.InventoryEffect;
 import org.spongepowered.common.event.tracking.context.transaction.inventory.PlayerInventoryTransaction;
-import org.spongepowered.common.event.tracking.context.transaction.pipeline.InteractItemPipeline;
 import org.spongepowered.common.registry.provider.DirectionFacingProvider;
 import org.spongepowered.common.util.VecHelper;
 import org.spongepowered.math.vector.Vector3d;
@@ -79,7 +80,7 @@ public abstract class ServerPlayerGameModeMixin_Tracker {
     @Shadow protected net.minecraft.server.level.ServerLevel level;
     @Shadow private GameType gameModeForPlayer;
 
-    @Shadow public abstract boolean isCreative();
+    @Shadow public abstract boolean shadow$isCreative();
 
     @Inject(method = "useItem", cancellable = true,
             at = @At(value = "INVOKE",
@@ -105,12 +106,17 @@ public abstract class ServerPlayerGameModeMixin_Tracker {
         // Sponge start
         final BlockSnapshot snapshot = ((ServerWorld) (worldIn)).createSnapshot(VecHelper.toVector3i(blockpos));
         final Vector3d hitVec = Vector3d.from(blockRaytraceResultIn.getBlockPos().getX(), blockRaytraceResultIn.getBlockPos().getY(), blockRaytraceResultIn.getBlockPos().getZ());
-        final org.spongepowered.api.util.Direction direction = DirectionFacingProvider.INSTANCE.getKey(blockRaytraceResultIn.getDirection()).get();
+        final var direction = DirectionFacingProvider.INSTANCE.getKey(blockRaytraceResultIn.getDirection()).get();
         final PhaseContext<?> phaseContext = PhaseTracker.getInstance().getPhaseContext();
-        phaseContext.getTransactor().logSecondaryInteractionTransaction(playerIn, stackIn, hitVec, snapshot, direction, handIn);
-        final InteractBlockEvent.Secondary event = SpongeCommonEventFactory.callInteractBlockEventSecondary(playerIn, stackIn, hitVec, snapshot, direction, handIn);
+        final var event = SpongeCommonEventFactory.callInteractBlockEventSecondary(playerIn, stackIn, hitVec, snapshot, direction, handIn);
         final Tristate useItem = event.useItemResult();
         final Tristate useBlock = event.useBlockResult();
+        phaseContext.getTransactor().logSecondaryInteractionTransaction(playerIn,
+            stackIn,
+            hitVec,
+            snapshot,
+            direction,
+            handIn, event);
         ((ServerPlayerGameModeBridge) this).bridge$setInteractBlockRightClickCancelled(event.isCancelled());
         if (event.isCancelled()) {
             player.inventoryMenu.sendAllDataToRemote();
@@ -143,19 +149,18 @@ public abstract class ServerPlayerGameModeMixin_Tracker {
                 final ItemStack copiedStack = stackIn.copy();
                 if (useBlock != Tristate.FALSE && !flag1) { // Sponge check useBlock
                     final AbstractContainerMenu lastOpenContainer = playerIn.containerMenu;
-                    final var interaction = ((TrackedWorldBridge) level).bridge$startInteractionChange(worldIn, playerIn, handIn, blockRaytraceResultIn, blockstate, copiedStack);
+                    final var interaction = ((TrackedWorldBridge) level).bridge$startInteractAtBlockChange(worldIn, playerIn, handIn, blockRaytraceResultIn, blockstate, copiedStack);
                     if (interaction == null) {
                         return InteractionResult.FAIL;
                     }
-                    final PhaseContext<@NonNull ?> context = phaseContext;
-                    final InteractionResult result = interaction.processInteraction(context);
+                    final InteractionResult result = interaction.processInteraction(phaseContext);
 
                     if (result.consumesAction() && lastOpenContainer != playerIn.containerMenu) {
                         final Vector3i pos = VecHelper.toVector3i(blockRaytraceResultIn.getBlockPos());
                         final ServerLocation location = ServerLocation.of((ServerWorld) worldIn, pos);
-                        try (final CauseStackManager.StackFrame frame = PhaseTracker.getCauseStackManager().pushCauseFrame()) {
-                            frame.pushCause(playerIn);
-                            frame.addContext(EventContextKeys.BLOCK_HIT, ((ServerWorld) (worldIn)).createSnapshot(pos));
+                        try (final CauseStackManager.StackFrame containerFrame = PhaseTracker.getCauseStackManager().pushCauseFrame()) {
+                            containerFrame.pushCause(playerIn);
+                            containerFrame.addContext(EventContextKeys.BLOCK_HIT, ((ServerWorld) (worldIn)).createSnapshot(pos));
                             ((ContainerBridge) playerIn.containerMenu).bridge$setOpenLocation(location);
                             if (!InventoryEventFactory.callInteractContainerOpenEvent(playerIn)) {
                                 return InteractionResult.FAIL;
@@ -174,20 +179,21 @@ public abstract class ServerPlayerGameModeMixin_Tracker {
                         ((ServerPlayerGameModeBridge) this).bridge$setInteractBlockRightClickCancelled(true);
                         return InteractionResult.PASS;
                     }
-                    // Sponge end
                     final UseOnContext itemusecontext = new UseOnContext(playerIn, handIn, blockRaytraceResultIn);
                     final InteractionResult result;
-                    if (this.isCreative()) {
-                        final int i = stackIn.getCount();
-                        result = stackIn.useOn(itemusecontext);
-                        stackIn.setCount(i);
+                    final var interaction = ((TrackedWorldBridge) level).bridge$startUseItemOnChange(itemusecontext, copiedStack, player, this.shadow$isCreative());
+                    // Sponge end
+                    if (this.shadow$isCreative()) {
+                        // final int i = stackIn.getCount(); - vanilla - moved to interaction effect
+                        result = interaction.processInteraction(phaseContext); // Sponge - forward to our interaction pipeline
+                        // stackIn.setCount(i); - vanilla - moved to interaction effect
                     } else {
-                        result = stackIn.useOn(itemusecontext);
+                        result = interaction.processInteraction(phaseContext); // Sponge - forward to our interaction pipeline
                         // Sponge start - log change in hand
                         final PhaseContext<@NonNull ?> context = PhaseTracker.SERVER.getPhaseContext();
                         final TransactionalCaptureSupplier transactor = context.getTransactor();
                         if (!transactor.isEmpty()) { //TODO: Add effect to attach the transaction to be the child of the parents
-                            try (final EffectTransactor ignored = context.getTransactor().pushEffect(new ResultingTransactionBySideEffect(InventoryEffect.getInstance()))) {
+                            try (final EffectTransactor ignored = context.getTransactor().pushEffect(new ResultingTransactionBySideEffect<>(InventoryEffect.getInstance()))) {
                                 transactor.logPlayerInventoryChange(this.player, PlayerInventoryTransaction.EventCreator.STANDARD);
                                 this.player.inventoryMenu.broadcastChanges();
                             }

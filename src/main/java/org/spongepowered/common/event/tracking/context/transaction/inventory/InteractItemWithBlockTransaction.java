@@ -32,11 +32,17 @@ import net.minecraft.world.item.ItemStack;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.spongepowered.api.block.BlockSnapshot;
+import org.spongepowered.api.event.Cancellable;
 import org.spongepowered.api.event.Cause;
 import org.spongepowered.api.event.CauseStackManager;
+import org.spongepowered.api.event.CompositeEvent;
+import org.spongepowered.api.event.Event;
+import org.spongepowered.api.event.SpongeEventFactory;
 import org.spongepowered.api.event.block.InteractBlockEvent;
+import org.spongepowered.api.event.impl.AbstractCompositeEvent;
 import org.spongepowered.api.item.inventory.ItemStackSnapshot;
 import org.spongepowered.api.util.Direction;
+import org.spongepowered.api.util.Tristate;
 import org.spongepowered.common.event.tracking.PhaseContext;
 import org.spongepowered.common.event.tracking.context.transaction.GameTransaction;
 import org.spongepowered.common.event.tracking.context.transaction.type.TransactionTypes;
@@ -44,25 +50,37 @@ import org.spongepowered.common.item.util.ItemStackUtil;
 import org.spongepowered.common.util.PrettyPrinter;
 import org.spongepowered.math.vector.Vector3d;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.BiConsumer;
+import java.util.stream.Stream;
 
-public class InteractItemTransaction extends GameTransaction<InteractBlockEvent.Secondary.Composite> {
-
+public class InteractItemWithBlockTransaction extends GameTransaction<CompositeEvent<InteractBlockEvent.Secondary>> {
 
     private final Vector3d hitVec;
     private final BlockSnapshot snapshot;
     private final Direction direction;
     private final InteractionHand hand;
     private final ItemStackSnapshot stack;
+    private final Tristate originalBlockResult, blockResult, originalItemResult, itemResult;
 
-    public InteractItemTransaction(ServerPlayer playerIn, ItemStack stackIn, Vector3d hitVec, BlockSnapshot snapshot, Direction direction, InteractionHand handIn) {
+    public InteractItemWithBlockTransaction(
+        final ServerPlayer playerIn, final ItemStack stackIn, final Vector3d hitVec, final BlockSnapshot snapshot,
+        final Direction direction, final InteractionHand handIn,
+        final Tristate originalBlockResult, final Tristate useBlockResult,
+        final Tristate originalUseItemResult, final Tristate useItemResult) {
         super(TransactionTypes.INTERACT_BLOCK_SECONDARY.get());
         this.stack = ItemStackUtil.snapshotOf(stackIn);
         this.hitVec = hitVec;
         this.snapshot = snapshot;
         this.direction = direction;
         this.hand = handIn;
+        this.originalBlockResult = originalBlockResult;
+        this.blockResult = useBlockResult;
+        this.originalItemResult = originalUseItemResult;
+        this.itemResult = useItemResult;
+
     }
 
 
@@ -79,24 +97,46 @@ public class InteractItemTransaction extends GameTransaction<InteractBlockEvent.
     }
 
     @Override
-    public Optional<InteractBlockEvent.Secondary.Composite> generateEvent(
+    public Optional<CompositeEvent<InteractBlockEvent.Secondary>> generateEvent(
         final PhaseContext<@NonNull ?> context,
         final @Nullable GameTransaction<@NonNull ?> parent,
-        final ImmutableList<GameTransaction<InteractBlockEvent.Secondary.Composite>> gameTransactions,
+        final ImmutableList<GameTransaction<CompositeEvent<InteractBlockEvent.Secondary>>> gameTransactions,
         final Cause currentCause
     ) {
-        return Optional.empty();
+        final var root = SpongeEventFactory.createInteractBlockEventSecondary(currentCause,
+            this.originalBlockResult, this.blockResult,
+            this.originalItemResult, this.itemResult,
+            this.snapshot, this.hitVec,
+            this.direction
+        );
+        final List<Event> list = new ArrayList<>();
+        final var composite = SpongeEventFactory.createCompositeEvent(currentCause, root, list);
+        return Optional.of(composite);
     }
 
     @Override
-    public void restore(PhaseContext<@NonNull ?> context, InteractBlockEvent.Secondary.Composite event) {
+    public void associateSideEffectEvents(CompositeEvent<InteractBlockEvent.Secondary> event, Stream<Event> elements) {
+        elements.forEach(event.children()::add);
+        // This finalizes the list to be immutable
+        ((AbstractCompositeEvent<InteractBlockEvent.Secondary>) event).postInit();
+    }
+
+    public void pushCause(CauseStackManager.StackFrame frame, CompositeEvent<InteractBlockEvent.Secondary> e) {
+        frame.pushCause(e.baseEvent());
+    }
+
+    @Override
+    public void restore(PhaseContext<@NonNull ?> context, CompositeEvent<InteractBlockEvent.Secondary> event) {
 
     }
 
     @Override
     public boolean markCancelledTransactions(
-        final InteractBlockEvent.Secondary.Composite event,
-        final ImmutableList<? extends GameTransaction<InteractBlockEvent.Secondary.Composite>> gameTransactions) {
+        final CompositeEvent<InteractBlockEvent.Secondary> event,
+        final ImmutableList<? extends GameTransaction<CompositeEvent<InteractBlockEvent.Secondary>>> gameTransactions) {
+        event.children().stream().filter(e -> e instanceof Cancellable)
+            .map(e -> (Cancellable) e)
+            .forEach(e -> e.setCancelled(event.isCancelled()));
         return false;
     }
 }

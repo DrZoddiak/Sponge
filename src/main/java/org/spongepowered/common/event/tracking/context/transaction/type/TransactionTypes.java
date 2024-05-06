@@ -27,6 +27,7 @@ package org.spongepowered.common.event.tracking.context.transaction.type;
 import org.spongepowered.api.ResourceKey;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.event.Cancellable;
+import org.spongepowered.api.event.CompositeEvent;
 import org.spongepowered.api.event.Event;
 import org.spongepowered.api.event.block.ChangeBlockEvent;
 import org.spongepowered.api.event.block.InteractBlockEvent;
@@ -66,7 +67,7 @@ public final class TransactionTypes {
     public static final DefaultedRegistryReference<TransactionType<ChangeInventoryEvent>> CHANGE_INVENTORY_EVENT = TransactionTypes.key(ResourceKey.sponge("change_inventory"));
     public static final DefaultedRegistryReference<TransactionType<AffectSlotEvent>> SLOT_CHANGE = TransactionTypes.key(ResourceKey.sponge("slot_change"));
 
-    public static final DefaultedRegistryReference<TransactionType<InteractBlockEvent.Secondary.Composite>> INTERACT_BLOCK_SECONDARY = TransactionTypes.key(ResourceKey.sponge("interact_block_secondary"));
+    public static final DefaultedRegistryReference<TransactionType<CompositeEvent<InteractBlockEvent.Secondary>>> INTERACT_BLOCK_SECONDARY = TransactionTypes.key(ResourceKey.sponge("interact_block_secondary"));
 
     // SORTFIELDS:OFF
 
