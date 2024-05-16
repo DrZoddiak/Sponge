@@ -64,6 +64,11 @@ public final class ByteArrayMutableBiomeBuffer extends AbstractBiomeBuffer imple
     }
 
     @Override
+    public Palette<Biome, Biome> biomePalette() {
+        return this.palette;
+    }
+
+    @Override
     public boolean setBiome(final int x, final int y, final int z, final Biome biome) {
         this.checkRange(x, y, z);
 

@@ -106,6 +106,16 @@ public class SpongeArchetypeVolume extends AbstractVolumeBuffer implements Arche
     }
 
     @Override
+    public Palette<Biome, Biome> biomePalette() {
+        return this.biomes.biomePalette();
+    }
+
+    @Override
+    public Palette<BlockState, BlockType> blockPalette() {
+        return this.blocks.blockPalette();
+    }
+
+    @Override
     public Optional<BlockEntityArchetype> blockEntityArchetype(final int x, final int y, final int z) {
         return this.blockEntities.blockEntityArchetype(x, y, z);
     }
@@ -218,7 +228,7 @@ public class SpongeArchetypeVolume extends AbstractVolumeBuffer implements Arche
     }
 
     public Palette<BlockState, BlockType> getBlockPalette() {
-        return this.blocks.getPalette();
+        return this.blocks.blockPalette();
     }
 
     public Palette<Biome, Biome> getBiomePalette() {
