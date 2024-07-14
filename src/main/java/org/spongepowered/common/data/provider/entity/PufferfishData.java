@@ -28,6 +28,7 @@ import net.minecraft.world.entity.animal.Pufferfish;
 import org.spongepowered.api.data.Keys;
 import org.spongepowered.common.accessor.world.entity.animal.PufferfishAccessor;
 import org.spongepowered.common.data.provider.DataProviderRegistrator;
+import org.spongepowered.math.vector.Vector3f;
 
 public final class PufferfishData {
 
@@ -36,10 +37,14 @@ public final class PufferfishData {
 
     // @formatter:off
     public static void register(final DataProviderRegistrator registrator) {
-        registrator
+         registrator
                 .asMutable(Pufferfish.class)
                     .create(Keys.SCALE)
-                        .get(h -> (double) PufferfishAccessor.invoker$getScale(h.getPuffState()));
-    }
+                        .get(h -> {
+                            double scale = PufferfishAccessor.invoker$getScale(h.getPuffState());
+                            return new Vector3f(scale,scale,scale);
+                        });
+         }
+
     // @formatter:on
 }

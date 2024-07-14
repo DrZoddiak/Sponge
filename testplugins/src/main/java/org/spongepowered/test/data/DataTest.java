@@ -119,6 +119,7 @@ import org.spongepowered.api.world.server.ServerLocation;
 import org.spongepowered.api.world.server.ServerWorld;
 import org.spongepowered.api.world.weather.WeatherTypes;
 import org.spongepowered.math.vector.Vector3d;
+import org.spongepowered.math.vector.Vector3f;
 import org.spongepowered.math.vector.Vector3i;
 import org.spongepowered.plugin.PluginContainer;
 import org.spongepowered.plugin.builtin.jvm.Plugin;
@@ -1170,7 +1171,7 @@ public final class DataTest  {
 
         this.checkOfferData(player, Keys.SATURATION, 20.0);
 
-        this.checkGetData(sheep, Keys.SCALE, 1.0);
+        this.checkGetData(sheep, Keys.SCALE, Vector3f.ONE);
 
         // Keys.SCOREBOARD_TAGS
 

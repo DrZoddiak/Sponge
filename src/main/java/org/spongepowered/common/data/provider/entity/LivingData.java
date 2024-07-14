@@ -44,6 +44,7 @@ import org.spongepowered.common.util.Constants;
 import org.spongepowered.common.util.PotionEffectUtil;
 import org.spongepowered.common.util.SpongeTicks;
 import org.spongepowered.math.vector.Vector3d;
+import org.spongepowered.math.vector.Vector3f;
 
 import java.util.Collection;
 
@@ -172,7 +173,10 @@ public final class LivingData {
                             }
                         })
                     .create(Keys.SCALE)
-                        .get(h -> (double) h.getScale())
+                        .get(h -> {
+                            double scale = h.getScale();
+                            return new Vector3f(scale,scale,scale);
+                        })
                     .create(Keys.STUCK_ARROWS)
                         .get(LivingEntity::getArrowCount)
                         .setAnd((h, v) -> {

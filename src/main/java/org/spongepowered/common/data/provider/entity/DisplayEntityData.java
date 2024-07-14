@@ -44,6 +44,7 @@ import org.spongepowered.common.accessor.world.entity.Display_BlockDisplayAccess
 import org.spongepowered.common.accessor.world.entity.Display_ItemDisplayAccessor;
 import org.spongepowered.common.accessor.world.entity.Display_TextDisplayAccessor;
 import org.spongepowered.common.adventure.SpongeAdventure;
+import org.spongepowered.common.bridge.DisplayBridge;
 import org.spongepowered.common.data.provider.DataProviderRegistrator;
 import org.spongepowered.common.item.util.ItemStackUtil;
 import org.spongepowered.common.util.SpongeTicks;
@@ -58,6 +59,10 @@ public class DisplayEntityData {
     // @formatter:off
     public static void register(final DataProviderRegistrator registrator) {
         registrator
+                .asMutable(DisplayBridge.class)
+                    .create(Keys.SCALE)
+                        .get((DisplayBridge::bridge$getScale))
+                        .set(DisplayBridge::bridge$setScale)
                 .asMutable(Display.class)
                     .create(Keys.TRANSFORM)
                         .get(DisplayEntityData::getTransform)

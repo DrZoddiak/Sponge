@@ -51,6 +51,7 @@ import org.spongepowered.api.world.server.ServerLocation;
 import org.spongepowered.api.world.server.ServerWorld;
 import org.spongepowered.math.imaginary.Quaterniond;
 import org.spongepowered.math.vector.Vector3d;
+import org.spongepowered.math.vector.Vector3f;
 import org.spongepowered.plugin.PluginContainer;
 import org.spongepowered.plugin.builtin.jvm.Plugin;
 
@@ -234,7 +235,7 @@ public class DisplayEntityTest {
                         player.world().spawnEntity(blockDisplay);
                         blockDisplay.offer(Keys.TELEPORT_DURATION, Ticks.of(20));
                         blockDisplay.setLocation(((ServerLocation) blockDisplay.location().add(0.0, 4.0, 0.0)));
-
+                        blockDisplay.offer(Keys.SCALE, new Vector3f(1.0,5.0,1.0));
 
                         textDisplay = createEntity(player.world(), EntityTypes.TEXT_DISPLAY, centerPos, forwardDir, col7, 0);
                         textDisplay.offer(Keys.DISPLAY_NAME, Component.text("Look at these interpolations").color(NamedTextColor.RED));

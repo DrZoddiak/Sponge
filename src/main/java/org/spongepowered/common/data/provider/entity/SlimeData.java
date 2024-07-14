@@ -28,6 +28,7 @@ import net.minecraft.world.entity.monster.Slime;
 import org.spongepowered.api.data.Keys;
 import org.spongepowered.common.accessor.world.entity.monster.SlimeAccessor;
 import org.spongepowered.common.data.provider.DataProviderRegistrator;
+import org.spongepowered.math.vector.Vector3f;
 
 public final class SlimeData {
 
@@ -39,7 +40,10 @@ public final class SlimeData {
         registrator
                 .asMutable(Slime.class)
                     .create(Keys.SCALE)
-                        .get(h -> (double) (0.255F * (float) h.getSize()))
+                        .get(h -> {
+                            double scale = 0.255F * (float) h.getSize();
+                            return new Vector3f(scale,scale,scale);
+                        })
                     .create(Keys.SIZE)
                         .get(h -> h.getSize() - 1)
                         .set((h, v) -> ((SlimeAccessor) h).invoker$setSize(v + 1, false));

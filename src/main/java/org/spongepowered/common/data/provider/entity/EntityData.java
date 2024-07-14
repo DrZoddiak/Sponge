@@ -44,6 +44,7 @@ import org.spongepowered.common.entity.SpongeEntitySnapshot;
 import org.spongepowered.common.util.Constants;
 import org.spongepowered.common.util.SpongeTicks;
 import org.spongepowered.common.util.VecHelper;
+import org.spongepowered.math.vector.Vector3f;
 
 import java.util.stream.Collectors;
 
@@ -205,7 +206,7 @@ public final class EntityData {
                             return true;
                         })
                     .create(Keys.SCALE)
-                        .get(h -> 1d)
+                        .get(h -> Vector3f.ONE)
                     .create(Keys.SCOREBOARD_TAGS)
                         .get(Entity::getTags)
                         .set((h, v) -> {

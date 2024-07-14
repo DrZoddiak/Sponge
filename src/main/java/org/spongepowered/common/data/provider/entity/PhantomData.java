@@ -29,6 +29,7 @@ import org.spongepowered.api.data.Keys;
 import org.spongepowered.api.data.type.PhantomPhase;
 import org.spongepowered.common.accessor.world.entity.monster.PhantomAccessor;
 import org.spongepowered.common.data.provider.DataProviderRegistrator;
+import org.spongepowered.math.vector.Vector3f;
 
 public final class PhantomData {
 
@@ -40,7 +41,10 @@ public final class PhantomData {
         registrator
                 .asMutable(Phantom.class)
                     .create(Keys.SCALE)
-                        .get(h -> (double) (h.getBbWidth() + (0.2F * (float) h.getPhantomSize())) / h.getBbWidth())
+                        .get(h -> {
+                            double scale = (double) (h.getBbWidth() + (0.2F * (float) h.getPhantomSize())) / h.getBbWidth();
+                            return new Vector3f(scale,scale,scale);
+                        })
                     .create(Keys.SIZE)
                         .get(Phantom::getPhantomSize)
                         .set(Phantom::setPhantomSize)

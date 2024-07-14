@@ -107,6 +107,7 @@
         "world.damagesource.DamageSourcesMixin",
         "world.entity.ActiveChunkReferentMixin",
         "world.entity.AgableMobMixin",
+        "world.entity.DisplayMixin",
         "world.entity.EntityMaxAirMixin",
         "world.entity.EntityMixin",
         "world.entity.EntitySelectorMixin",
